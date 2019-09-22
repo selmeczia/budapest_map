@@ -1,2 +1,2 @@
-a <- "this is a test command"
+a <- "this is a new test command"
 print(a)
