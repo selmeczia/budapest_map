@@ -28,7 +28,7 @@ crs <- 102013 #ESRI projection for mapping. I found mine here: https://spatialre
 #-----------set up the road types you want to plot and what colors they should be
 plottypes <-  c('Utca', 'Tér', 'Út', 'Körút', 'Rakpart', 'Lépcső‘', 'Híd', 'Sétány', 'Vizek')
 plotcolors <-  c('Utca' = '#5EC3E1', 'Tér' = '#FFD035', 'Út' ='#4EB480', 'Körút' = '#2E968C', 'Rakpart' = '#EA4E66',
-                'Híd' = '#0D7ABF', 'Sétány' = '#F3902C', 'Egyéb' = '#C9C9C9', 'Vizek' = '#F39CA6', "Ösvény" = "#C75B9E")
+                'Híd' = '#996AAA', 'Sétány' = '#F3902C', 'Egyéb' = '#C9C9C9', 'Vizek' = '#F39CA6', "Ösvény" = "#208FC6")
 
 #-----------get to plotting
 #import  road geography
@@ -127,7 +127,7 @@ map_des <- ggplot() +
 
 save_path <- ("C:/Users/Adam/Documents/budapest_map/exports")
 
-ggsave(paste0(city,"5", ".png"),
+ggsave(paste0(city,"7", ".png"),
        #plot = map_des,
        path = save_path,
        scale = 1,
