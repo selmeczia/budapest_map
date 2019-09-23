@@ -26,9 +26,9 @@ crs <- 102013 #ESRI projection for mapping. I found mine here: https://spatialre
 
 
 #-----------set up the road types you want to plot and what colors they should be
-plottypes <-  c('Utca', 'Tér', 'Út', 'Körút', 'Rakpart', 'Lépcső', 'Híd', 'Sétány', 'Vizek')
-plotcolors <-  c('Utca' = '#59c8e5', 'Tér' = '#fed032', 'Út' ='#4cb580', 'Körút' = '#fe4d64', 'Rakpart' = '#0a7abf',
-                 'Lépcső' = '#2e968c', 'Híd' = '#fe9ea5', 'Sétány' = '#fe9ea5', 'Other' = '#cccccc', 'Vizek' = 'lightblue')
+plottypes <-  c('Utca', 'Tér', 'Út', 'Körút', 'Rakpart', 'Lépcső‘', 'Híd', 'Sétány', 'Vizek')
+plotcolors <-  c('Utca' = '#59c8e5', 'Tér' = '#fed032', 'Út' ='#4cb580', 'Kőrút' = '#fe4d64', 'Rakpart' = '#0a7abf',
+                 'Lépcső‘' = '#2e968c', 'Híd' = '#fe9ea5', 'Sétány' = '#fe9ea5', 'Other' = '#cccccc', 'Vizek' = 'lightblue')
 
 #-----------get to plotting
 #import  road geography
