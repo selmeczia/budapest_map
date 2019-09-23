@@ -14,7 +14,7 @@ options(stringsAsFactors = FALSE)
 #pick a region and download/unzip the .shp.zip file: http://download.geofabrik.de/
 
 #-----------set the working directory to wherever you unzipped the downloaded files to
-setwd("C:/Users/Adam/Documents/budapest_map/hungary_data/")
+setwd("C:/Users/Adam/Documents/budapest_map/hungary_map")
 
 
 #-----------set some basic info about the city you're mapping
@@ -27,13 +27,13 @@ crs <- 102013 #ESRI projection for mapping. I found mine here: https://spatialre
 
 #-----------set up the road types you want to plot and what colors they should be
 plottypes <-  c('Utca', 'Tér', 'Út', 'Körút', 'Rakpart', 'Lépcső‘', 'Híd', 'Sétány', 'Vizek')
-plotcolors <-  c('Utca' = '#59c8e5', 'Tér' = '#fed032', 'Út' ='#4cb580', 'Kőrút' = '#fe4d64', 'Rakpart' = '#0a7abf',
-                 'Lépcső‘' = '#2e968c', 'Híd' = '#fe9ea5', 'Sétány' = '#fe9ea5', 'Other' = '#cccccc', 'Vizek' = 'lightblue')
+plotcolors <-  c('Utca' = '#5EC3E1', 'Tér' = '#FFD035', 'Út' ='#0D7ABF', 'Körút' = '#2E968C', 'Rakpart' = '#EA4E66',
+                'Híd' = '#4EB480', 'Sétány' = '#F3902C', 'Egyéb' = '#C9C9C9', 'Vizek' = '#F39CA6')
 
 #-----------get to plotting
 #import  road geography
 filename <- "gis_osm_roads_free_1"
-allroads <- read_sf(".", filename)
+allroads_raw <- read_sf(".", filename)
 
 #waters
 waters <- read_sf(".", "gis_osm_water_a_free_1")
@@ -48,24 +48,54 @@ waters_sub$bridge <- NA
 waters_sub$tunnel <- NA
 waters_sub$len <- NA
 
-allroads <- rbind(allroads,waters_sub)
 
 #subset the roads into a circle.
 pt <- data.frame(lat = lat, long = long)
 pt <- pt %>% st_as_sf(coords = c("long", "lat"), crs = 4326) %>%  st_transform(crs) 
 circle <- st_buffer(pt, dist = rad)
-circle <- circle %>% st_transform(st_crs(allroads))
-allroads <- st_intersection(circle, allroads)
+circle <- circle %>% st_transform(st_crs(allroads_raw))
+allroads_circle <- st_intersection(circle, allroads_raw)
 
 #remove unnamed footpaths
-allroads <- allroads[!(allroads$fclass  == "footway" & is.na(allroads$name)),]
+allroads_circle <- allroads_circle[!(allroads_circle$fclass  == "footway" & is.na(allroads_circle$name)),]
 
 #add in length 
 allroads$len <- st_length(allroads)
 
 #-----derive road suffixes-----
-#run this line if your suffixes are at the END of the name (e.g. Canal Street)
-allroads$TYPE <- substr(allroads$name, stri_locate_last(allroads$name, regex = " ")[, 1] + 1,  nchar(allroads$name)) %>% stri_trans_general(id = "Title")
+allroads_circle$suffix <- substr(allroads_circle$name, stri_locate_last(allroads_circle$name, regex = " ")[, 1] + 1,  nchar(allroads_circle$name)) %>%
+  tolower()
+
+mapping <- c(
+  "utca" = "utca",
+  "tér" = "tér",
+  "út" = "út",
+  "körút" = "körút",
+  "rakpart" = "rakpart",
+  "lépcső" = "egyéb",
+  "híd" = "híd",
+  "sétány" = "sétány",
+  "útja" = "út",
+  "köz" = "utca",
+  "aluljáró" = "egyéb",
+  "udvar" = "egyéb",
+  "park" = "egyéb",
+  "tere" = "tér",
+  "lánchíd" = "híd",
+  "fasor" = "utca",
+  "alagút" = "utca"
+  
+)
+
+mapping <- as.data.frame(mapping)
+mapping <- rownames_to_column(mapping)
+colnames(mapping) <- c("suffix", "TYPE")
+
+
+allroads_mapped <- merge(allroads_circle, mapping, by = "suffix")
+allroads_mapped$TYPE <- str_to_title(allroads_mapped$TYPE)
+
+allroads <- allroads_mapped
 
 
 #--------uncomment and run this code to get the top roads by length.
@@ -76,13 +106,10 @@ allroads$TYPE <- substr(allroads$name, stri_locate_last(allroads$name, regex = "
 #plottype <- plottype %>% group_by(TYPE) %>% summarise(Length = sum(len)) %>% arrange(-Length) 
 
 
-#rename motorways that don't have some other designation
-allroads$TYPE[allroads$fclass == 'motorway' & !(allroads$TYPE %in% plottypes)] <- "Motorway"
-
 #put other roads into their own dataframe
-allroads$TYPE[!(allroads$TYPE %in% plottypes) & allroads$TYPE != 'Motorway'] <- "Other"
-otherroads <- allroads[(allroads$TYPE  == "Other"),]
-allroads <- allroads[(allroads$TYPE  != "Other"),]
+#allroads$TYPE[!(allroads$TYPE %in% plottypes)] <- "Egyéb"
+#otherroads <- allroads[(allroads$TYPE  == "Other"),]
+#allroads <- allroads[(allroads$TYPE  != "Other"),]
 
 #plot it
 blankbg <-theme(axis.line=element_blank(),axis.text.x=element_blank(),
@@ -95,6 +122,15 @@ ggplot() + blankbg + theme(panel.grid.major = element_line(colour = "transparent
   geom_sf(data=otherroads, size = .8, aes(color=TYPE)) + 
   geom_sf(data=allroads, size =1, aes(color=TYPE)) +
   scale_color_manual(values = plotcolors, guide = "legend") 
+
+
+ggplot() + blankbg + theme(panel.grid.major = element_line(colour = "transparent")) +
+  geom_sf(data=waters_sub, fill = '#F39CA6', color = '#F39CA6', alpha = .2)+
+  #geom_sf(data=otherroads, size = .8, aes(color=TYPE)) + 
+  geom_sf(data=allroads, size =1, aes(color=TYPE)) +
+  scale_color_manual(values = plotcolors, guide = "legend") 
+
+
 
 ggsave(paste0(".", city, ".png"), plot = last_plot(),
        scale = 1, width = 24, height = 36, units = "in",
