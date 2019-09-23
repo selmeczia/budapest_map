@@ -28,7 +28,7 @@ crs <- 102013 #ESRI projection for mapping. I found mine here: https://spatialre
 #-----------set up the road types you want to plot and what colors they should be
 plottypes <-  c('Utca', 'Tér', 'Út', 'Körút', 'Rakpart', 'Lépcső‘', 'Híd', 'Sétány', 'Vizek')
 plotcolors <-  c('Utca' = '#5EC3E1', 'Tér' = '#FFD035', 'Út' ='#4EB480', 'Körút' = '#2E968C', 'Rakpart' = '#EA4E66',
-                'Híd' = '#0D7ABF', 'Sétány' = '#F3902C', 'Egyéb' = '#C9C9C9', 'Vizek' = '#F39CA6')
+                'Híd' = '#0D7ABF', 'Sétány' = '#F3902C', 'Egyéb' = '#C9C9C9', 'Vizek' = '#F39CA6', "Ösvény" = "#C75B9E")
 
 #-----------get to plotting
 #import  road geography
@@ -74,7 +74,8 @@ mapping <- c(
   "tere" = "tér",
   "lánchíd" = "híd",
   "fasor" = "utca",
-  "alagút" = "utca"
+  "alagút" = "utca",
+  "felüljáró" = "út"
   
 )
 
@@ -83,10 +84,13 @@ mapping <- rownames_to_column(mapping)
 colnames(mapping) <- c("suffix", "TYPE")
 
 
-allroads_mapped <- merge(allroads_circle, mapping, by = "suffix")
+allroads_mapped <- merge(allroads_circle, mapping, all.x = T)
 allroads_mapped$TYPE <- str_to_title(allroads_mapped$TYPE)
+allroads_mapped$TYPE[(allroads_mapped$fclass == "primary" & is.na(allroads_mapped$suffix))] <- "Út"
+allroads_mapped$TYPE[(allroads_mapped$fclass == "path" & is.na(allroads_mapped$suffix))] <- "Ösvény"
 
-allroads <- allroads_mapped
+
+allroads <- allroads_mapped[!is.na(allroads_mapped$TYPE),]
 
 
 #--------uncomment and run this code to get the top roads by length.
@@ -123,12 +127,26 @@ map_des <- ggplot() +
 
 save_path <- ("C:/Users/Adam/Documents/budapest_map/exports")
 
-ggsave(paste0(city,"3", ".png"),
-       plot = map_des,
+ggsave(paste0(city,"5", ".png"),
+       #plot = map_des,
        path = save_path,
        scale = 1,
        width = 24,
        height = 36,
        units = "in",
        dpi = 500)
+
+
+
+
+a <- allroads_circle %>% filter(is.na(suffix)) %>% filter(fclass=="primary")
+
+ggplot() + 
+  blankbg + theme(panel.grid.major = element_line(colour = "transparent")) +
+  geom_sf(data=waters_sub, color="grey")+
+  geom_sf(data=a, size =1,aes(color=fclass))
+
+c("path"="ösvény",
+  "primary" = "út"
+  )
 
