@@ -1,5 +1,5 @@
 #-----------you need to install the following packages. this only needs to be done once.
-install.packages(c('sf', 'foreign', 'tidyverse', 'stringi', 'lwgeom'))
+install.packages(c('sf', 'foreign', 'tidyverse', 'stringi', 'lwgeom', 'smoothr'))
 
 #-----------initialize libraries. This needs to be done for each new R session 
 library(sf)
@@ -7,6 +7,7 @@ library(foreign)
 library(tidyverse)
 library(lwgeom)
 library(stringi)
+library(smoothr)
 
 options(stringsAsFactors = FALSE)
 
@@ -28,7 +29,7 @@ crs <- 102013 #ESRI projection for mapping. I found mine here: https://spatialre
 #-----------set up the road types you want to plot and what colors they should be
 plottypes <-  c('Utca', 'Tér', 'Út', 'Körút', 'Rakpart', 'Lépcső‘', 'Híd', 'Sétány', 'Vizek')
 plotcolors <-  c('Utca' = '#5EC3E1', 'Tér' = '#FFD035', 'Út' ='#4EB480', 'Körút' = '#2E968C', 'Rakpart' = '#EA4E66',
-                'Híd' = '#996AAA', 'Sétány' = '#F3902C', 'Egyéb' = '#C9C9C9', 'Vizek' = '#F39CA6', "Ösvény" = "#208FC6")
+                'Híd' = '#996AAA', 'Sétány' = '#F3902C', 'Egyéb' = '#999999', 'Vizek' = '#F39CA6', "Ösvény" = "#208FC6")
 
 #-----------get to plotting
 #import  road geography
@@ -47,6 +48,11 @@ allroads_circle <- st_intersection(circle, allroads_raw)
 waters <- read_sf(".", "gis_osm_water_a_free_1")
 waters_sub <- st_intersection(circle, waters) 
 
+#railways
+rails <- read_sf(".", "gis_osm_railways_free_1")
+railways_sub <- st_intersection(circle, rails) 
+
+
 #remove unnamed footpaths
 allroads_circle <- allroads_circle[!(allroads_circle$fclass  == "footway" & is.na(allroads_circle$name)),]
 
@@ -54,8 +60,10 @@ allroads_circle <- allroads_circle[!(allroads_circle$fclass  == "footway" & is.n
 allroads$len <- st_length(allroads)
 
 #-----derive road suffixes-----
+allroads_circle$name <- gsub("-"," ",allroads_circle$name)
 allroads_circle$suffix <- substr(allroads_circle$name, stri_locate_last(allroads_circle$name, regex = " ")[, 1] + 1,  nchar(allroads_circle$name)) %>%
   tolower()
+
 
 mapping <- c(
   "utca" = "utca",
@@ -75,7 +83,8 @@ mapping <- c(
   "lánchíd" = "híd",
   "fasor" = "utca",
   "alagút" = "utca",
-  "felüljáró" = "út"
+  "felüljáró" = "út",
+  "sor" = "utca"
   
 )
 
@@ -113,21 +122,17 @@ blankbg <-theme(axis.line=element_blank(),axis.text.x=element_blank(),
                 panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
                 panel.grid.minor=element_blank(),plot.background=element_blank())
 
-ggplot() + blankbg + theme(panel.grid.major = element_line(colour = "transparent")) + 
-  geom_sf(data=otherroads, size = .8, aes(color=TYPE)) + 
-  geom_sf(data=allroads, size =1, aes(color=TYPE)) +
-  scale_color_manual(values = plotcolors, guide = "legend") 
-
 
 map_des <- ggplot() + 
   blankbg + theme(panel.grid.major = element_line(colour = "transparent")) +
   geom_sf(data=waters_sub, fill = '#F39CA6', color = '#F39CA6', alpha = .2)+
   geom_sf(data=allroads, size =1, aes(color=TYPE)) +
+  geom_sf(data=filter(railways_sub,fclass=="rail"), color='#C9C9C9')+
   scale_color_manual(values = plotcolors, guide = "legend") 
 
 save_path <- ("C:/Users/Adam/Documents/budapest_map/exports")
 
-ggsave(paste0(city,"7", ".png"),
+ggsave(paste0(city,"9", ".png"),
        #plot = map_des,
        path = save_path,
        scale = 1,
@@ -143,8 +148,8 @@ a <- allroads_circle %>% filter(is.na(suffix)) %>% filter(fclass=="primary")
 
 ggplot() + 
   blankbg + theme(panel.grid.major = element_line(colour = "transparent")) +
-  geom_sf(data=waters_sub, color="grey")+
-  geom_sf(data=a, size =1,aes(color=fclass))
+  geom_sf(data=waters_sub, fill = '#F39CA6', color = '#F39CA6', alpha = .2)+
+  geom_sf(data=allroads_chaikin, color='blue')
 
 c("path"="ösvény",
   "primary" = "út"
